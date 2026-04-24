@@ -1,0 +1,11 @@
+[package]
+name = "trading-bot"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+t-invest-sdk = "0.15"
+tokio = { version = "1.52", features = ["full"] }
+flume = "0.12"
+dotenvy = "0.15"
+anyhow = "1.0.102"
