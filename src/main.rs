@@ -1,4 +1,8 @@
 use anyhow::anyhow;
+use t_invest_sdk::api::{Candle, SubscribeCandlesResponse, SubscriptionStatus};
+use t_invest_sdk::api::{
+    MarketDataResponse,
+    market_data_response::Payload};
 use std::env;
 use t_invest_sdk::api::{
     get_candles_request::CandleSource, market_data_request, CandleInstrument,
@@ -55,9 +59,46 @@ async fn main() -> anyhow::Result<()> {
 
     let mut streaming = response.into_inner();
 
+    const rsi_n: u32 = 14;
+    
+    // Хранение данных: вам потребуется буфер значений close (длиной n+1, чтобы иметь предыдущее закрытие) и переменные текущих avg_gain, avg_loss.
+    // Расчёт индикатора начинается только после накопления первых n свечей; до этого момента сигналы не генерируются.
     loop {
         if let Some(next_message) = streaming.message().await? {
             println!("Candle: {:?}", next_message);
+            if let Some(payload) = next_message.payload  {
+                handle_message(payload);   
+            }
         }
     }
+}
+
+fn handle_message(next_message_payload: Payload) {
+    if let Payload::Candle(candle_response) = next_message_payload {
+        handle_candle(candle_response)
+    }
+}
+
+fn handle_candle(candle_response: Candle) {
+
+    let mut open = candle_response.open;
+    let mut close = candle_response.close;
+
+    let mut open = candle_response.open;
+    let mut close = candle_response.close;
+
+    // Период n – гиперпараметр (классически 14). На каждом закрытии свечи (цена close) вычисляем прирост или падение относительно предыдущего закрытия.
+    gain_i = max(close_i - close_{i-1}, 0)
+    loss_i = max(close_{i-1} - close_i, 0)
+
+    // Первое сглаженное среднее (за первые n свечей)
+    avg_gain = (gain_2 + gain_3 + ... + gain_n) / n
+    avg_loss = (loss_2 + loss_3 + ... + loss_n) / n
+
+    // Последующие значения (для свечи n+1 и далее) обновляются по методу Уайлдера (экспоненциальное сглаживание):
+    avg_gain = (prev_avg_gain * (n - 1) + gain_current) / n
+    avg_loss = (prev_avg_loss * (n - 1) + loss_current) / n
+
+    RS = avg_gain / avg_loss;//   (при avg_loss == 0 → RS → ∞)
+    RSI = 100 - (100 / (1 + RS))
 }
